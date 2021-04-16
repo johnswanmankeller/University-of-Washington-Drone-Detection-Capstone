@@ -12,9 +12,9 @@ from GPS import *
 import serial
 
 dateString = datetime.now()
-
+print("Program Starting")
 #User set parameters
-captureMinutes = 5 # how long to capture data for
+captureMinutes = 1.1 # how long to capture data for
 actualRate = 0 # added capture delay (in seconds)
 isThisADrone = 0 #1 for drone, 0 for non-drone
 
@@ -27,7 +27,8 @@ moni_data = []
 
 port = "/dev/ttyUSB2"
 ser = serial.Serial(port, 115200, timeout=5)
-
+ser.write("AT#MONI=7\r".encode())
+response = ser.read(64)
 
 
 
@@ -48,9 +49,11 @@ while duration > (time.perf_counter() - startTime):
 
      
 arrayRSRP = []
+flag2RSRP = 0
 for measurement in moni_data:
     servingRSRP, neighborRSRP = float("-inf"), float("-inf")
     flagRSRP = 0
+    flag2RSRP = 0 
     print("Set = ", measurement)
     for text in measurement: 
         split = text.split(":")
@@ -59,6 +62,8 @@ for measurement in moni_data:
             if (flagRSRP == 0):
                 servingRSRP = int(split[1])
                 flagRSRP = 1
+            elif (flag2RSRP == 0):
+                flag2RSRP = 1
             else:
                 neighborRSRP = max(neighborRSRP, int(split[1]))
     print("Neighbor = ", neighborRSRP)
@@ -80,7 +85,7 @@ RSSI_offset = -113
     
 for i in range(0, captures):
     y1_result.append(int(y1_data[i]) * 2 + RSSI_offset)   
-    y2_result.append(y2_data[i])
+    #y2_result.append(arrayRSRP[i])
     drone_det_data.append(isThisADrone)
     
 print("final y1_data = ", y1_result)

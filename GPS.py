@@ -33,8 +33,8 @@ def getRSRP(ser):
     return split2[0]
 
 def getMONI(ser):
-    ser.write("AT#MONI=7\r".encode())
-    response = ser.read(64)
+    #ser.write("AT#MONI=7\r".encode())
+    #response = ser.read(64)
     ser.write("AT#MONI\r".encode())
     response = ser.read(5000)
     response = str(response).split(' ')
