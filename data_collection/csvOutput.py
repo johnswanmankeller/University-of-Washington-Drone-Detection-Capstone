@@ -1,108 +1,133 @@
 '''
 csvOutput.py
-John Keller
+John Keller, Brian Arnold, Yujen Chen
 EE 497/498 T-Mobile Capstone Project
-3/11/2021
+4/20/2021
 '''
-#from cellulariot import cellulariot
+
+#imports
 from datetime import datetime
 import csv
 import time
 from GPS import *
 import serial
-
-dateString = datetime.now()
+import statistics
 print("Program Starting")
+
 #User set parameters
-captureMinutes = 1.1 # how long to capture data for
+captureMinutes = 1 # how long to capture data for
 actualRate = 0 # added capture delay (in seconds)
 isThisADrone = 0 #1 for drone, 0 for non-drone
 
-x_data = []
-y1_data = []
-y2_data = []
-drone_det_data = []
-moni_data = []
-
+time_data = [] #Time elasped
+rssi_data = [] #RSSI measurements (signal strength)
+num_cell_towers_data = [] #number of connect cell phone towers
+drone_det_data = [] #0/1 (not drone, drone)
+moni_data = [] #RSRP data (from serving and non serving cells
+speed_data = [] #km/hr
+altitude_data = [] #meters
+longitude_data = [] #format = dddmmm.mmmm E/W (d = degrees, m = minutes)
+latitude_data = [] #format = ddmm.mmmm N/S (d = degrees, m = minutes)
+std_dev_rsrp = [] #std dev of all rsrp from neighbooring and serving cells
 
 port = "/dev/ttyUSB2"
+
+#Initializing serial port/AT commands
 ser = serial.Serial(port, 115200, timeout=5)
+ser.write("AT$GPSRST\r".encode())
+response = ser.read(64)
+ser.write("AT$GPSP=1\r".encode())
+response = ser.read(64)
 ser.write("AT#MONI=7\r".encode())
 response = ser.read(64)
 
-
-
-
 #parameter convserion
 duration = 60 * captureMinutes
+RSSI_offset = -113
 
 #start timer
 startTime = time.perf_counter()
+
 while duration > (time.perf_counter() - startTime):
-    y1_data.append(getRSSI(ser))
-    #y2_data.append(getRSRP(ser))
-    x_data.append(time.perf_counter() - startTime)
+    #Performs calculation to get RSSI in db from code
+    rssi_data.append(int(getRSSI(ser)) * 2 + RSSI_offset)
+                                       
+    #Raw (unformatted/calculated) RSRP data
     moni_data.append(getMONI(ser))
-    print("MONI Info = ",  getMONI(ser))
-    print("Number of Cells = ", getMONIQ(ser))
+    
+    #number of serving cells
+    #num_cell_towers_data.append(getMONIQ(ser))
+    
+    #lat, long, altitude, speed
+    single_GPS_data = getGPSACP(ser)
+    latitude_data.append(single_GPS_data[0])
+    longitude_data.append(single_GPS_data[1])
+    altitude_data.append(single_GPS_data[2])
+    speed_data.append(single_GPS_data[3])
+    
+    #time elasped
+    time_data.append(time.perf_counter() - startTime)
+    
+    #optional added delay
     time.sleep(actualRate)
 
-     
+
+#calculates difference in RSRP between serving and most powerful
+#non-serving cell
 arrayRSRP = []
 flag2RSRP = 0
+
 for measurement in moni_data:
     servingRSRP, neighborRSRP = float("-inf"), float("-inf")
     flagRSRP = 0
-    flag2RSRP = 0 
-    print("Set = ", measurement)
+    flag2RSRP = 0
+    all_rsrp = []
+    #print("Set = ", measurement)
     for text in measurement: 
         split = text.split(":")
-        print("To split = ", split) 
+        #print("To split = ", split)
         if (split[0] == "RSRP" and (int(split[1]) != 0)):
             if (flagRSRP == 0):
                 servingRSRP = int(split[1])
                 flagRSRP = 1
+                all_rsrp.append(servingRSRP)
             elif (flag2RSRP == 0):
                 flag2RSRP = 1
             else:
                 neighborRSRP = max(neighborRSRP, int(split[1]))
-    print("Neighbor = ", neighborRSRP)
-    print("Serving = ", servingRSRP)
+                all_rsrp.append(int(split[1]))
+    #print("Neighbor = ", neighborRSRP)
+    #print("Serving = ", servingRSRP)
     arrayRSRP.append(servingRSRP - neighborRSRP)
-print("Diff in RSRP = ", arrayRSRP)
+    std_dev_rsrp.append(statistics.stdev(all_rsrp))
+#print("Diff in RSRP = ", arrayRSRP)
 
-
-time.sleep(actualRate)
-#putting data in correct format
-y1_result = []
-y2_result = []
-print("raw y1_data = ", y1_data)
-print("raw y2_data = ", y2_data)
-
-    
-captures = len(y1_data)
-RSSI_offset = -113
-    
+#adds drone/non-drone classification to array with same length as other measurements
+captures = len(rssi_data)
 for i in range(0, captures):
-    y1_result.append(int(y1_data[i]) * 2 + RSSI_offset)   
-    #y2_result.append(arrayRSRP[i])
     drone_det_data.append(isThisADrone)
     
-print("final y1_data = ", y1_result)
-print("final y2_data = ", y2_result)
+#closes serial port
 ser.close()
 
-
-#
-#filename in format "dataCapture 2021-03-11 15;18;29.csv"
-# = datetime.now()
+#creates custom file name for output CSV data file
+dateString = datetime.now()
 filename = "dataCapture " + str(dateString)[:13] + ";" + str(dateString)[14:16] + ";" + str(dateString)[17:19] + ".csv"
 
+#writes data to output CSV File
 with open(filename, 'w', newline='') as csvfile:
     writer = csv.writer(csvfile)
-    writer.writerow(y1_result)  #writes RSSI data
+    writer.writerow(rssi_data)  #writes RSSI data
     writer.writerow(arrayRSRP)  #writes RSRP data
-    writer.writerow(drone_det_data) #
-    writer.writerow(x_data)     #writes time
+    writer.writerow(std_dev_rsrp) #standard deviation of rsrp values
+    #writer.writerow(num_cell_towers_data) #writes number of connected cell towers
+
+    writer.writerow(latitude_data)  #writes latitude data
+    writer.writerow(longitude_data)  #writes longitude data
+    writer.writerow(altitude_data)  #writes altitude data
+    writer.writerow(speed_data)  #writes speed data
+    
+    writer.writerow(drone_det_data) #writes drone classification (0/1)
+    writer.writerow(time_data)     #writes time
 
 print("Capture done, CSV file created with name ", str(filename))
