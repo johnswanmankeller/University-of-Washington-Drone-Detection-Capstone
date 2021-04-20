@@ -15,7 +15,7 @@ import statistics
 print("Program Starting")
 
 #User set parameters
-captureMinutes = 1 # how long to capture data for
+captureMinutes = 3 # how long to capture data for
 actualRate = 0 # added capture delay (in seconds)
 isThisADrone = 0 #1 for drone, 0 for non-drone
 
@@ -40,6 +40,9 @@ ser.write("AT$GPSP=1\r".encode())
 response = ser.read(64)
 ser.write("AT#MONI=7\r".encode())
 response = ser.read(64)
+print("Wait for GPS to connect")
+time.sleep(60) #For GPS
+print("GPS wait over")
 
 #parameter convserion
 duration = 60 * captureMinutes
@@ -117,17 +120,30 @@ filename = "dataCapture " + str(dateString)[:13] + ";" + str(dateString)[14:16] 
 #writes data to output CSV File
 with open(filename, 'w', newline='') as csvfile:
     writer = csv.writer(csvfile)
-    writer.writerow(rssi_data)  #writes RSSI data
-    writer.writerow(arrayRSRP)  #writes RSRP data
-    writer.writerow(std_dev_rsrp) #standard deviation of rsrp values
-    #writer.writerow(num_cell_towers_data) #writes number of connected cell towers
+    writer.writerow(["RSSI, Delt RSRP, Std Dev RSRP, Lat, Long, Altitude, Speed, Classification, Time Elasped"])
+    for i in range(0, len(rssi_data)):
+        row = []
+        row.append(rssi_data[i])
+        row.append(arrayRSRP[i])
+        row.append(std_dev_rsrp[i])
+        row.append(latitude_data[i])
+        row.append(longitude_data[i])
+        row.append(altitude_data[i])
+        row.append(speed_data[i])
+        row.append(drone_det_data[i])
+        row.append(time_data[i])
+        writer.writerow(row)
+    #writer.writerow(rssi_data)  #writes RSSI data
+    #writer.writerow(arrayRSRP)  #writes RSRP data
+    #writer.writerow(std_dev_rsrp) #standard deviation of rsrp values
 
-    writer.writerow(latitude_data)  #writes latitude data
-    writer.writerow(longitude_data)  #writes longitude data
-    writer.writerow(altitude_data)  #writes altitude data
-    writer.writerow(speed_data)  #writes speed data
+
+    #writer.writerow(latitude_data)  #writes latitude data
+    #writer.writerow(longitude_data)  #writes longitude data
+    #writer.writerow(altitude_data)  #writes altitude data
+    #writer.writerow(speed_data)  #writes speed data
     
-    writer.writerow(drone_det_data) #writes drone classification (0/1)
-    writer.writerow(time_data)     #writes time
+    #writer.writerow(drone_det_data) #writes drone classification (0/1)
+    #writer.writerow(time_data)     #writes time
 
 print("Capture done, CSV file created with name ", str(filename))
