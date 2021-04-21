@@ -15,7 +15,7 @@ import statistics
 print("Program Starting")
 
 #User set parameters
-captureMinutes = 3 # how long to capture data for
+captureMinutes = 10 # how long to capture data for
 actualRate = 0 # added capture delay (in seconds)
 isThisADrone = 0 #1 for drone, 0 for non-drone
 
