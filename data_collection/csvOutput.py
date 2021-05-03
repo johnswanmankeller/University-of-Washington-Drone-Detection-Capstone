@@ -18,6 +18,7 @@ print("Program Starting")
 captureMinutes = 10 # how long to capture data for
 actualRate = 0 # added capture delay (in seconds)
 isThisADrone = 0 #1 for drone, 0 for non-drone
+startDelay = 4 #delay in minutes from program start to data capture
 
 time_data = [] #Time elasped
 rssi_data = [] #RSSI measurements (signal strength)
@@ -41,7 +42,7 @@ response = ser.read(64)
 ser.write("AT#MONI=7\r".encode())
 response = ser.read(64)
 print("Wait for GPS to connect")
-time.sleep(60) #For GPS
+time.sleep(60 * startDelay) #For GPS
 print("GPS wait over")
 
 #parameter convserion
@@ -58,9 +59,6 @@ while duration > (time.perf_counter() - startTime):
     #Raw (unformatted/calculated) RSRP data
     moni_data.append(getMONI(ser))
     
-    #number of serving cells
-    #num_cell_towers_data.append(getMONIQ(ser))
-    
     #lat, long, altitude, speed
     single_GPS_data = getGPSACP(ser)
     latitude_data.append(single_GPS_data[0])
@@ -72,6 +70,7 @@ while duration > (time.perf_counter() - startTime):
     time_data.append(time.perf_counter() - startTime)
     
     #optional added delay
+    print("Time Left = ", duration - (time.perf_counter() - startTime))
     time.sleep(actualRate)
 
 
@@ -120,7 +119,7 @@ filename = "dataCapture " + str(dateString)[:13] + ";" + str(dateString)[14:16] 
 #writes data to output CSV File
 with open(filename, 'w', newline='') as csvfile:
     writer = csv.writer(csvfile)
-    writer.writerow(["RSSI, Delt RSRP, Std Dev RSRP, Lat, Long, Altitude, Speed, Classification, Time Elasped"])
+    writer.writerow(["RSSI, Delt RSRP, Std Dev RSRP, Lat, Long, Altitude, Speed, Classification, Time Elasped, Moni Data"])
     for i in range(0, len(rssi_data)):
         row = []
         row.append(rssi_data[i])
@@ -132,6 +131,7 @@ with open(filename, 'w', newline='') as csvfile:
         row.append(speed_data[i])
         row.append(drone_det_data[i])
         row.append(time_data[i])
+        row.append(moni_data[i])
         writer.writerow(row)
     #writer.writerow(rssi_data)  #writes RSSI data
     #writer.writerow(arrayRSRP)  #writes RSRP data
