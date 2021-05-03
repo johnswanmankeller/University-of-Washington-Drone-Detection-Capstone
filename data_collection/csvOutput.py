@@ -18,7 +18,7 @@ print("Program Starting")
 captureMinutes = 10 # how long to capture data for
 actualRate = 0 # added capture delay (in seconds)
 isThisADrone = 0 #1 for drone, 0 for non-drone
-startDelay = 4 #delay in minutes from program start to data capture
+startDelay = 5 #delay in minutes from program start to data capture
 
 time_data = [] #Time elasped
 rssi_data = [] #RSSI measurements (signal strength)
@@ -101,7 +101,12 @@ for measurement in moni_data:
     #print("Neighbor = ", neighborRSRP)
     #print("Serving = ", servingRSRP)
     arrayRSRP.append(servingRSRP - neighborRSRP)
-    std_dev_rsrp.append(statistics.stdev(all_rsrp))
+    if (len(all_rsrp) == 0):
+        std_dev_rsrp.append(0)
+    elif (len(all_rsrp) == 1):
+        std_dev_rsrp.append(0)
+    else:   
+        std_dev_rsrp.append(statistics.stdev(all_rsrp))
 #print("Diff in RSRP = ", arrayRSRP)
 
 #adds drone/non-drone classification to array with same length as other measurements
