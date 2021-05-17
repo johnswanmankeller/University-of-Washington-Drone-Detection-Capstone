@@ -9,15 +9,15 @@ EE 497/498 T-Mobile Capstone Project
 from datetime import datetime
 import csv
 import time
-from GPS import *
+from captureCommands import *
 import serial
 import statistics
 print("Program Starting")
 
 #User set parameters
-captureMinutes = 10 # how long to capture data for
+captureMinutes = 7 # how long to capture data for
 actualRate = 0 # added capture delay (in seconds)
-isThisADrone = 0 #1 for drone, 0 for non-drone
+isThisADrone = 1 #1 for drone, 0 for non-drone
 startDelay = 5 #delay in minutes from program start to data capture
 
 time_data = [] #Time elasped
