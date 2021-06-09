@@ -1,16 +1,32 @@
 '''
-Name: John Keller
-Purpose: Takes raw moni data from csv, returns signal
-strength measurement from individual tower as well as
-serving cell id over time
-Date: 5/10/2021
+towerDataIndv.py
+John Keller, Brian Arnold, Yujen Chen
+EE 497/498 T-Mobile Drone Detection Capstone Project
+6/9/2021
+
+This script takes raw moni data from a CSV output file created and formats it
+to be viewed by connected towers and their RSRP value over time. This can be useful
+for looking at connection power of specific cell phone towers over time.
+
+This script can also seperate RSRQ by tower if minor modifications are made.
+
+Please be sure to look at line 40 and make sure the index matches the row of the MONI measurment
+in the input CSV file.
+
+This script will output a CSV file when it is finished containing the captured data in
+the same folder containing csvOutput.py. Please put input CSV file in the same folder as
+towerDataIndv.py.
+
+This script will output the new CSV file in the same directory it is located. 
+
 '''
+
 import csv
 
 moni_data = []
 
 ids = {}
-name = 'dataCapture 2021-05-02 13;41;02.-8StoryOutsideCaptureRoofSouth'
+name = 'dataCapture 2021-05-02 13;41;02.-8StoryOutsideCaptureRoofSouth' #Name of input file
 file = name + '.csv'
 
 #open file, get raw moni data
@@ -21,15 +37,14 @@ with open(file) as csv_file:
         if line_count == 0:
             line_count += 1
         else:
-            moni_data.append(row[9])
+            moni_data.append(row[9]) #change this value to the row that MONI measurement occupies in input CSV file
 
-#get the ids of all towers seen by SIM
+#Gets ids of all towers seen by SIM
 for measurement in moni_data:
     array = measurement.split(",")
     cellId = ""
     earfcn = ""
     startFlag = False
-    # ADD CASE FOR NO SERVING CELLS
     for value in array:
         split = value.split(":")
         if (len(split) > 1):
@@ -97,7 +112,7 @@ for measurement in moni_data:
 
 print(ids)
 
-# writes data to output CSV File
+# writes data to output CSV File. Output will be the same name with "Towers" appended to the end
 keys = list(ids.keys())
 length = len(ids[keys[0]])
 with open(name + 'Towers' + '.csv', 'w', newline='') as csvfile:

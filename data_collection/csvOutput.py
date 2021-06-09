@@ -1,8 +1,19 @@
 '''
 csvOutput.py
 John Keller, Brian Arnold, Yujen Chen
-EE 497/498 T-Mobile Capstone Project
-4/20/2021
+EE 497/498 T-Mobile Drone Detection Capstone Project
+6/9/2021
+
+This script is designed to run on a Raspberry Pi 4 Computer with an Sixfab
+"IoT Base Hat" attachment, equipped with a Telit LE910C1 Mini PCIe LTE CAT1 Module.
+
+This script relies on the captureCommands.py file that includes supporting code for
+requesting data from the cellular modem (through AT Commands). Please put
+captureCommands.py in the same folder as csvOutput (or add path to script)
+
+This script will output a CSV file when it is finished containing the captured data in
+the same folder containing csvOutput.py.
+
 '''
 
 #imports
@@ -15,16 +26,16 @@ import statistics
 print("Program Starting")
 
 #User set parameters
-captureMinutes = 8 # how long to capture data for
+captureMinutes = 10 # how long to capture data for
 actualRate = 0 # added capture delay (in seconds)
-isThisADrone = 0 #1 for drone, 0 for non-drone
-startDelay = 5 #delay in minutes from program start to data capture
+isThisADrone = 1 #1 for drone, 0 for non-drone
+startDelay = 5 #delay in minutes from program start to data capture (to initialize connection)
 
 time_data = [] #Time elasped
 rssi_data = [] #RSSI measurements (signal strength)
-num_cell_towers_data = [] #number of connect cell phone towers
+num_cell_towers_data = [] #number of connected cell phone towers
 drone_det_data = [] #0/1 (not drone, drone)
-moni_data = [] #RSRP data (from serving and non serving cells
+moni_data = [] #RSRP data (from serving and non serving cells)
 speed_data = [] #km/hr
 altitude_data = [] #meters
 longitude_data = [] #format = dddmmm.mmmm E/W (d = degrees, m = minutes)
@@ -79,15 +90,14 @@ while duration > (time.perf_counter() - startTime):
 arrayRSRP = []
 flag2RSRP = 0
 
+#Calculates delta RSRP and standard deviation of RSRP from captured MONI values
 for measurement in moni_data:
     servingRSRP, neighborRSRP = float("-inf"), float("-inf")
     flagRSRP = 0
     flag2RSRP = 0
     all_rsrp = []
-    #print("Set = ", measurement)
     for text in measurement: 
         split = text.split(":")
-        #print("To split = ", split)
         if (split[0] == "RSRP" and (int(split[1]) != 0)):
             if (flagRSRP == 0):
                 servingRSRP = int(split[1])
@@ -98,8 +108,6 @@ for measurement in moni_data:
             else:
                 neighborRSRP = max(neighborRSRP, int(split[1]))
                 all_rsrp.append(int(split[1]))
-    #print("Neighbor = ", neighborRSRP)
-    #print("Serving = ", servingRSRP)
     arrayRSRP.append(servingRSRP - neighborRSRP)
     if (len(all_rsrp) == 0):
         std_dev_rsrp.append(0)
@@ -107,8 +115,7 @@ for measurement in moni_data:
         std_dev_rsrp.append(0)
     else:   
         std_dev_rsrp.append(statistics.stdev(all_rsrp))
-#print("Diff in RSRP = ", arrayRSRP)
-
+        
 #adds drone/non-drone classification to array with same length as other measurements
 captures = len(rssi_data)
 for i in range(0, captures):
@@ -138,17 +145,5 @@ with open(filename, 'w', newline='') as csvfile:
         row.append(time_data[i])
         row.append(moni_data[i])
         writer.writerow(row)
-    #writer.writerow(rssi_data)  #writes RSSI data
-    #writer.writerow(arrayRSRP)  #writes RSRP data
-    #writer.writerow(std_dev_rsrp) #standard deviation of rsrp values
-
-
-    #writer.writerow(latitude_data)  #writes latitude data
-    #writer.writerow(longitude_data)  #writes longitude data
-    #writer.writerow(altitude_data)  #writes altitude data
-    #writer.writerow(speed_data)  #writes speed data
-    
-    #writer.writerow(drone_det_data) #writes drone classification (0/1)
-    #writer.writerow(time_data)     #writes time
 
 print("Capture done, CSV file created with name ", str(filename))

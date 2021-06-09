@@ -1,3 +1,20 @@
+'''
+captureCommands.py
+John Keller, Brian Arnold, Yujen Chen
+EE 497/498 T-Mobile Drone Detection Capstone Project
+6/9/2021
+
+This script is designed to run on a Raspberry Pi 4 Computer with an Sixfab
+"IoT Base Hat" attachment, equipped with a Telit LE910C1 Mini PCIe LTE CAT1 Module.
+
+This script supports csvOutput.py to collect connection data from the cellular modem.
+Please put this script in the same directory as csvOuput.py (or include path to this
+file).
+
+This script will output a CSV file when it is finished containing the captured data in
+the same folder containing csvOutput.py.
+
+'''
 # Sixfab - Reading GPS data with Python
 # 2020
 
